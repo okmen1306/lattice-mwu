@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite the report."
+title: "Lattice-Quantized Multiplicative Weights: How Many Bits Does an Online Linear Learner Need?"
+authors:
+  - family-names: "Ökmen"
+    given-names: "Muhammed"
+    orcid: "https://orcid.org/0009-0002-9709-966X"
+license-url: "https://polyformproject.org/licenses/noncommercial/1.0.0/"
+preferred-citation:
+  type: report
+  title: "Lattice-Quantized Multiplicative Weights: How Many Bits Does an Online Linear Learner Need?"
+  authors:
+    - family-names: "Ökmen"
+      given-names: "Muhammed"
+      orcid: "https://orcid.org/0009-0002-9709-966X"
+  year: 2026
+  publisher:
+    name: "Zenodo"
+  doi: "10.5281/zenodo.23568755"

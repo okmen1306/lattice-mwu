@@ -1,0 +1,44 @@
+
+==========================================================================================
+### GERCEK VERI -- 20 Newsgroups (seyrek)
+==========================================================================================
+  seed 0 bitti
+  seed 1 bitti
+  seed 2 bitti
+  seed 3 bitti
+  seed 4 bitti
+
+  A) Warmuth FP64 (eta* ayarli, 64 bit/sinaps): 90.31% +/-0.46
+
+  kol                cikarim     egitim      acc%            std   secilen p
+  ------------------------------------------------------------------------------------
+  B) MASTER-FLOAT        4 b   64+1 bit     90.56           0.71   ['0.5', '1', '1', '1', '0.25']
+  C) TAMSAYI-SAF         4 b      4 bit     90.49           0.64   ['0.5', '1', '1', '1', '1']
+     >> 4 bit: tamsayi - master = -0.07 puan (t=-0.32)  BERABERE -> float master GEREKSIZ
+
+  B) MASTER-FLOAT        6 b   64+1 bit     90.56           0.71   ['0.5', '1', '1', '1', '0.25']
+  C) TAMSAYI-SAF         6 b      6 bit     90.49           0.64   ['0.5', '1', '1', '1', '1']
+     >> 6 bit: tamsayi - master = -0.07 puan (t=-0.32)  BERABERE -> float master GEREKSIZ
+
+
+==========================================================================================
+### SENTETIK DENGELI (yogun)
+==========================================================================================
+  seed 0 bitti
+  seed 1 bitti
+  seed 2 bitti
+  seed 3 bitti
+  seed 4 bitti
+
+  A) Warmuth FP64 (eta* ayarli, 64 bit/sinaps): 75.80% +/-1.21
+
+  kol                cikarim     egitim      acc%            std   secilen p
+  ------------------------------------------------------------------------------------
+  B) MASTER-FLOAT        4 b   64+1 bit     75.27           0.61   ['0.1', '0.1', '0.1', '0.1', '0.1']
+  C) TAMSAYI-SAF         4 b      4 bit     52.43           0.50   ['0.5', '0.5', '0.02', '1', '0.1']
+     >> 4 bit: tamsayi - master = -22.84 puan (t=-71.38)  MASTER KAZANIYOR -> kama zayif
+
+  B) MASTER-FLOAT        6 b   64+1 bit     76.81           1.75   ['0.5', '0.5', '0.1', '0.1', '0.5']
+  C) TAMSAYI-SAF         6 b      6 bit     71.80           1.43   ['0.5', '0.25', '0.25', '0.25', '0.25']
+     >> 6 bit: tamsayi - master = -5.01 puan (t=-4.24)  MASTER KAZANIYOR -> kama zayif
+

@@ -1,0 +1,34 @@
+====================================================================================
+KONTROL A -- GERCEK VERI, tek ray 4 bit, IKI ESDEGER LUT
+====================================================================================
+  seed 0: exp-LUT 89.87 | pow2-LUT 91.14 | Warmuth 90.04
+  seed 1: exp-LUT 90.94 | pow2-LUT 90.97 | Warmuth 91.20
+  seed 2: exp-LUT 89.99 | pow2-LUT 91.31 | Warmuth 90.18
+  seed 3: exp-LUT 90.97 | pow2-LUT 90.69 | Warmuth 90.27
+  seed 4: exp-LUT 90.41 | pow2-LUT 89.70 | Warmuth 89.87
+
+  LUT = exp(i*ln2) : 90.44% +/-0.46
+  LUT = 2.0**i     : 90.76% +/-0.57
+  Warmuth FP64     : 90.31% +/-0.46
+
+  >> MATEMATIKSEL OLARAK AYNI iki uygulama arasindaki fark: +0.33 puan (t=0.79)
+  >> LUT degerleri esit mi? True
+  >> Tam esit mi (bit bit)? False
+     i=3: exp=7.9999999999999982236  pow2=8  fark=-1.78e-15
+     i=4: exp=15.999999999999998224  pow2=16  fark=-1.78e-15
+     i=6: exp=63.999999999999978684  pow2=64  fark=-2.13e-14
+
+====================================================================================
+KONTROL B -- YOGUN SENTETIK, tek ray 7 bit + stokastik adim
+====================================================================================
+  seed 0 bitti
+  seed 1 bitti
+  seed 2 bitti
+  seed 3 bitti
+  seed 4 bitti
+
+  Warmuth FP64 (eta* ayarli): 75.80% +/-1.21
+  7 bit tek ray, p=1     : 73.58% +/-1.94  (Warmuth'a -2.22, t=-3.27)
+  7 bit tek ray, p=0.5   : 72.00% +/-1.80  (Warmuth'a -3.80, t=-4.60)
+  7 bit tek ray, p=0.25  : 69.87% +/-3.02  (Warmuth'a -5.93, t=-3.46)
+  7 bit tek ray, p=0.1   : 63.91% +/-1.26  (Warmuth'a -11.89, t=-10.54)
