@@ -1,0 +1,54 @@
+
+============================================================================================
+### SENTETIK DENGELI (yogun) -- ASIL SINAV: entropi burada cokmustu
+============================================================================================
+  seed 0 bitti
+  seed 1 bitti
+  seed 2 bitti
+  seed 3 bitti
+  seed 4 bitti
+
+  A) Warmuth FP64 (eta* ayarli, 64 bit/sinaps): 75.80% +/-1.21
+
+  --- 4 BIT ---
+    p-NORM kafes                52.29 +/-0.56   Warmuth'a -23.51 (t=-35.92)   secilen r: ['6', '8', '3', '8', '3']
+    ENTROPI kafes (eski)        52.33 +/-1.01   Warmuth'a -23.47 (t=-33.16)
+    MASTER-FLOAT (64 bit)       75.27 +/-0.61 
+
+  --- 6 BIT ---
+    p-NORM kafes                56.55 +/-0.59   Warmuth'a -19.25 (t=-33.03)   secilen r: ['6', '8', '8', '8', '8']
+    ENTROPI kafes (eski)        57.15 +/-1.17   Warmuth'a -18.65 (t=-25.45)
+    MASTER-FLOAT (64 bit)       76.81 +/-1.75 
+
+  --- 8 BIT ---
+    p-NORM kafes                74.95 +/-1.58   Warmuth'a  -0.85 (t= -2.89)   secilen r: ['6', '6', '6', '4', '6']
+    ENTROPI kafes (eski)        73.58 +/-1.94   Warmuth'a  -2.22 (t= -3.27)
+    MASTER-FLOAT (64 bit)       76.81 +/-1.75 
+
+
+============================================================================================
+### GERCEK VERI -- 20 Newsgroups (seyrek)
+============================================================================================
+  seed 0 bitti
+  seed 1 bitti
+  seed 2 bitti
+  seed 3 bitti
+  seed 4 bitti
+
+  A) Warmuth FP64 (eta* ayarli, 64 bit/sinaps): 90.31% +/-0.46
+
+  --- 4 BIT ---
+    p-NORM kafes                90.47 +/-0.35   Warmuth'a  +0.16 (t=  0.86)  <-- BERABERE   secilen r: ['1', '2', '1.5', '4', '1.5']
+    ENTROPI kafes (eski)        90.44 +/-0.46   Warmuth'a  +0.12 (t=  0.61)  <-- BERABERE
+    MASTER-FLOAT (64 bit)       90.56 +/-0.71 
+
+  --- 6 BIT ---
+    p-NORM kafes                90.26 +/-0.25   Warmuth'a  -0.06 (t= -0.22)  <-- BERABERE   secilen r: ['1', '1', '1.5', '4', '1.5']
+    ENTROPI kafes (eski)        90.44 +/-0.46   Warmuth'a  +0.12 (t=  0.61)  <-- BERABERE
+    MASTER-FLOAT (64 bit)       90.56 +/-0.71 
+
+  --- 8 BIT ---
+    p-NORM kafes                90.26 +/-0.25   Warmuth'a  -0.06 (t= -0.22)  <-- BERABERE   secilen r: ['1', '1', '1.5', '4', '1.5']
+    ENTROPI kafes (eski)        90.44 +/-0.46   Warmuth'a  +0.12 (t=  0.61)  <-- BERABERE
+    MASTER-FLOAT (64 bit)       90.56 +/-0.71 
+

@@ -1,0 +1,26 @@
+================================================================================================
+### (a) IKI BASARISIZLIGIN DOGRULANMASI -- 8 tohum, eslesmis t (kritik t=2.365)
+================================================================================================
+  20NG sci vs talk               4-bit 0.8071+/-0.0228 | Warmuth 0.8217+/-0.0118 | fark -1.46 puan t=-1.93  BERABERE
+  (0.1 dk)
+  MNIST 0-4 vs 5-9               4-bit 0.7342+/-0.0529 | Warmuth 0.7738+/-0.0181 | fark -3.96 puan t=-2.52  GERCEK FARK
+  (0.4 dk)
+
+================================================================================================
+### (b) U-YASASI: GERCEK VERIDE YENIDEN UYDURMA (D-283'un 5 noktasi)
+================================================================================================
+  GERCEK VERI uydurmasi : B* = 0.331*log2(U) + 2.01    R^2 = 0.949
+  SENTETIK uydurmasi    : B* = 0.425*log2(U) + 3.29   (D-282)
+  TEORI                 : egim 0.50
+
+  veri                    U    olcum   sentetik gercek-fit     hata
+  20NG comp/rec         2.2        2       3.16       2.38    -1.16
+  20NG sci/talk         4.5        3       3.68       2.72    -0.68
+  20NG din/tic          1.2        2       2.72       2.09    -0.72
+  RCV1                  4.5        3       3.69       2.73    -0.69
+  MNIST               619.8        5       7.24       5.08    -2.24
+
+  Sentetik-kalibreli yasanin hatalari: [-1.16, -0.68, -0.72, -0.69, -2.24]
+  >> HEPSI AYNI YONDE (asiri tahmin) -> sistematik yanlilik, gurultu degil
+
+toplam sure 0.4 dk

@@ -1,0 +1,14 @@
+========================================================================================
+### D-291 (EKSIK 1): MNIST, 25 TOHUM
+========================================================================================
+  5/25 tohum (0.6 dk)
+  10/25 tohum (1.1 dk)
+  15/25 tohum (1.7 dk)
+  20/25 tohum (2.3 dk)
+  25/25 tohum (2.9 dk)
+
+  model                        acc       std   bize gore (25 tohum, t_krit=2.06)
+  W1 Warmuth sabit          0.7982    0.0128    +0.44 (t=  1.51)  BERABERE  MDE=0.60
+  W2 Warmuth c/sqrt(t)      0.8166    0.0078    -1.40 (t= -5.54)  BIZ KAYBETTIK  MDE=0.52
+  W3 MWU+AdaGrad            0.8178    0.0092    -1.52 (t= -5.48)  BIZ KAYBETTIK  MDE=0.57
+  BIZ 4+k bit               0.8026    0.0145   

@@ -1,0 +1,35 @@
+
+==================================================================================================
+### MNIST 0-4 vs 5-9  (kalan TEK gerilik)
+==================================================================================================
+  seed 0 bitti
+  seed 1 bitti
+  seed 2 bitti
+
+  model                          acc       std   en iyi bize gore
+  ----------------------------------------------------------------------------------------
+  W1 Warmuth sabit            0.7800    0.0126   biz-o:  +2.94 (t=  2.23)  BERABERE
+  W2 Warmuth c/sqrt(t)        0.8243    0.0031   biz-o:  -1.49 (t= -2.73)  BERABERE
+  W3 MWU+AdaGrad              0.8264    0.0061   biz-o:  -1.69 (t= -6.84)  BIZ KAYBETTIK
+  BIZ entropi (4+k bit)       0.8094    0.0096    <== en iyi bizim
+  BIZ p-norm (6+k bit)        0.8050    0.0047   
+  secilenler: {'BIZ entropi (4+k bit)': ['k=0', 'k=2', 'k=0'], 'BIZ p-norm (6+k bit)': ['r=2,k=0', 'r=1,k=0', 'r=4,k=0']}
+  (0.7 dk)
+
+==================================================================================================
+### KONTROL: 20NG comp vs rec (seyrek -- entropi burada dogru canak olmali)
+==================================================================================================
+  seed 0 bitti
+  seed 1 bitti
+  seed 2 bitti
+
+  model                          acc       std   en iyi bize gore
+  ----------------------------------------------------------------------------------------
+  W1 Warmuth sabit            0.9055    0.0046   biz-o:  -0.10 (t= -0.18)  BERABERE
+  W2 Warmuth c/sqrt(t)        0.8958    0.0054   biz-o:  +0.87 (t=  2.31)  BERABERE
+  W3 MWU+AdaGrad              0.9129    0.0036   biz-o:  -0.85 (t= -0.96)  BERABERE
+  BIZ entropi (4+k bit)       0.9045    0.0096    <== en iyi bizim
+  BIZ p-norm (6+k bit)        0.9043    0.0037   
+  secilenler: {'BIZ entropi (4+k bit)': ['k=0', 'k=0', 'k=1'], 'BIZ p-norm (6+k bit)': ['r=4,k=0', 'r=1,k=0', 'r=2,k=0']}
+
+toplam sure 0.8 dk

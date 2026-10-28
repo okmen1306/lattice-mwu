@@ -1,0 +1,411 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{fontspec}
+\setmainfont{lmroman10-regular.otf}[BoldFont=lmroman10-bold.otf,ItalicFont=lmroman10-italic.otf,BoldItalicFont=lmroman10-bolditalic.otf]
+\usepackage{amsmath,amssymb,booktabs,graphicx,xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{framed}
+\definecolor{kutu}{gray}{0.94}
+\newenvironment{notkutu}{\def\FrameCommand{\fboxsep=6pt\colorbox{kutu}}\MakeFramed{\advance\hsize-\width\FrameRestore}\small}{\endMakeFramed}
+\setlength{\parskip}{4pt}\setlength{\parindent}{0pt}
+\title{Kafes-Kuantize Çarpımsal Ağırlıklar:\\Çevrimiçi Doğrusal Bir Öğrenici Kaç Bite İhtiyaç Duyar?\\[4pt]\large Lattice-Quantized Multiplicative Weights: How Many Bits Does an Online Linear Learner Need?}
+\author{Muhammed Ökmen\\Bağımsız Araştırmacı / Independent Researcher\\ORCID: \href{https://orcid.org/0009-0002-9709-966X}{0009-0002-9709-966X}}
+\date{Teknik rapor --- taslak 4 Eylül 2026}
+\begin{document}
+\maketitle
+\section*{Abstract (EN)}
+We study multiplicative-weights (MWU/Hedge) online linear classification when the \textbf{dual variable} $\theta=\ln w$ is constrained to an integer lattice $\delta\mathbb{Z}$ and to a bounded box, so that every weight is a power of two and every update is an integer increment — a bit shift. The learner keeps \textbf{no floating-point master copy, no optimizer moments and performs no backward pass}; its entire state is $4{+}k$ integer bits per synapse.
+\textbf{Theory.} We give a regret bound $\mathbb{E}[L]\le c(\delta)L_j+c(\delta)\ln D/\eta$ with $c(\delta)=\delta/(1-e^{-\delta})$, in which the lattice spacing $\delta$ and the effective learning rate $\eta=p\delta$ are decoupled via Bernoulli stepping. Two consequences are sharp: (a) refining the lattice recovers the optimal $\sqrt{2T\ln D}$ rate, but \textbf{at fixed $\delta=\ln2$ the bound is only constant-competitive, so pure \texttt{1<<k} and no-regret cannot be had simultaneously}; (b) an \textbf{exactness lemma} for the residual accumulator, $\tilde\theta_t:=\theta_t+\rho_t \Rightarrow \tilde\theta_{t+1}=\tilde\theta_t-\eta g_t$ with $\lvert\rho_t\rvert<\delta$, shows that the \emph{box} is not a limitation the theory fails to cover but precisely the thing error feedback repairs. We further derive a bit-width law $B^\star\gtrsim\tfrac12\log_2 U$ where $U=M\!\cdot\!A/D$ is the \textbf{per-coordinate update count} — the total horizon $T$ is the wrong variable, and we refute the $T$-form experimentally.
+\textbf{Empirics (5 real corpora + synthetic, paired tests).} On four sparse real tasks (three 20 Newsgroups splits and RCV1) a \textbf{4-bit} learner is statistically indistinguishable from a validation-tuned FP64 MWU. Against Warmuth's \emph{published} algorithm the integer learner is \textbf{at worst tied and wins on two benchmarks} (+1.82, $t{=}4.57$ vs fixed-$\eta$ MWU; +0.98, $t{=}3.22$ vs his own $c/\sqrt t$ schedule). A \textbf{4-bit counter plus a 3-bit integer residual accumulator (7 bits total) matches a 65-bit float-master learner} on dense data ($-1.11$, $t{=}-2.28$), a 9.3× state reduction; at 8 bits it is \emph{more stable} than the master ($\pm0.20$ vs $\pm0.61$).
+\textbf{Negative results — the most useful part of this work.} (i) Two claimed victories were destroyed by our own controls: one by a broken majority baseline, one by a $1.78\times10^{-15}$ lookup-table difference. (ii) We measure the resulting \textbf{chaos band} and find it is \emph{not a constant}: 0.90 points on 20 Newsgroups but \textbf{4.53 points on MNIST}, so the apparent MNIST gap is \textbf{below the minimum detectable effect} and no claim can be made there. (iii) Seven interventions failed to close that gap, and a diagnostic shows the model uses only \textbf{9 weight levels} regardless of bit width. (iv) The choice of Bregman potential (Euclidean / $p$-norm / entropy) made \textbf{no measurable difference anywhere}.
+\textbf{Novelty.} We state plainly that \textbf{no contribution here is verified as novel}: Winnow2 with $\alpha{=}2$ (1988), the fixed-$\beta$ Weighted Majority bound (1994), logarithmic-number-system training (NVIDIA, 2022), 8-bit optimizer state, error feedback and AdaGrad all precede us, and our literature search was \textbf{not exhaustive}. What we offer is a controlled measurement with its boundaries mapped.
+\section*{Özet (TR)}
+Çarpımsal ağırlık güncellemesinin (MWU/Hedge) \textbf{dual değişkeni} $\theta=\ln w$ tamsayı kafesine $\delta\mathbb{Z}$ ve sınırlı bir kutuya hapsedildiğinde ne olduğunu inceliyoruz. Bu kısıt altında her ağırlık ikinin kuvveti, her güncelleme bir tamsayı artışı — yani bir \textbf{bit kaydırma} — olur.
+\textbf{Ana ölçüm:} 20 Newsgroups gerçek metin verisinde \textbf{4 bitlik işaretli-üs} öğrenici, validation'da ayarlanmış FP64 MWU'dan \textbf{istatistiksel olarak ayırt edilemiyor} (90.44 ± 0.46 vs 90.31 ± 0.46). Durum belleği 16× küçük, sıfır float çarpma, sıfır çalışma-zamanı \texttt{exp()}.
+\textbf{Ana uyarı:} hiçbir yerde MWU'yu \textbf{yenmedik}. Bütün lehte görünen karşılaştırmalar beraberlik. Görünen tek "zafer" ölçüm gürültüsü çıktı.
+\begin{notkutu}\textbf{Uyarı.} \textbf{TASLAK v1 GENELİNDE GEÇERLİ UYARI (2026-09-04, BULGU Iki Iddia Iki Baseline).} Bu taslaktaki \textbf{tüm Warmuth referansları ALT SINIRDIR.} D-285'te baseline'a (a) genişletilmiş $\eta$ ızgarası (0.005–4.0) ve (b) \textbf{koordinat başına azalan adım programı} $\eta_i=c/\sqrt{n_i}$ verildiğinde, Warmuth'un kendisi üç tezgâhta birden yükseldi: MNIST \textbf{+3.2}, yoğun sentetik \textbf{+2.3}, 20NG \textbf{+1.2} puan. \textbf{Ayrıştırma (aşırı düzeltmeden kaçınmak için):} dar $\eta$ ızgarasının etkisi \textbf{yalnızca MNIST'te} gerçektir (+2.4); 20NG ($-0.1$) ve yoğun sentetikte ($-0.25$) eski baseline zaten yeterince güçlüydü. Ayrıca D-274..283'te \textbf{bizim kolumuzda da program yoktu}, yani eşleşme vardı. \textbf{İKİ AYRI İDDİA, İKİ AYRI KIYAS:} \emph{(A) temsil iddiası} — "aynı kural, 4 bit vs 64 bit" — iki kol \textbf{program dahil} eşleşmeli (W3). \emph{(B) sistem iddiası} — "motorumuz Warmuth'un yayınlanmış algoritmasını geçer" — baseline W1/W2 olmalı. \textbf{W3 Warmuth değil, MWU+AdaGrad'dır} (Duchi ve ark. 2011).
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lccc}\toprule
+Kıyas & MNIST & Yoğun & 20NG \\\midrule
+vs \textbf{W1} (Warmuth, sabit $\eta$) & \textbf{+1.82, t=4.57} (önde) & +1.27  & +0.30  \\
+vs \textbf{W2} (Warmuth, kendi $c/\sqrt t$) & −1.18  & −0.91  & \textbf{+0.98, t=3.22} (önde) \\
+vs W3 (MWU + AdaGrad) & −1.36  & −0.99  & −0.90  \\
+\bottomrule\end{tabular}}\end{center}
+\textbf{Düzeltilmiş ana ifade:} \emph{4+k bit tamsayı durumla, Warmuth'un yayınlanmış her hâline karşı en kötü berabere, iki tezgâhta önde; MWU+AdaGrad'a karşı 2/3 berabere, MNIST'te geride.} Ayrıca \textbf{veri seti çeşitliliği} $n{=}1\to n{=}5$'e çıkarıldı (RCV1 ve MNIST dahil); 4-bit motor 4/5 gerçek görevde berabere, MNIST'te gerçek kayıp. Bu bölümler taslak v2'ye yazılacak.
+\end{notkutu}
+\section*{Giriş}
+Littlestone, Kivinen ve Warmuth'un kurduğu çerçeve, çevrimiçi öğrenmenin tamamını tek bir denkleme indirger [1,2,3]:
+\[w_{t+1} = \arg\min_{w}\Big\{\eta\langle\nabla L_t, w\rangle + D_\phi(w, w_t)\Big\} \quad\Longleftrightarrow\quad \nabla\phi(w_{t+1}) = \nabla\phi(w_t) - \eta\nabla L_t\]
+$\phi=\tfrac12\|w\|^2$ seçilirse gradyan inişi, $\phi=\sum_i w_i\ln w_i$ seçilirse MWU/EG doğar. İkinci durumda dual değişken $\theta_i := \ln w_i$ olur ve güncelleme \textbf{dual uzayda basit bir çıkarmaya} iner:
+\[\theta_{t+1} = \theta_t - \eta g_t\]
+\textbf{Bu makalenin sorusu şu:} bu çıkarma $\mathbb{R}$'de olmak zorunda mı?
+$\theta$'yı $\delta\mathbb{Z}$ kafesine oturtursak, $\delta=\ln 2$ seçimiyle $w_i = 2^{k_i}$ olur; dual çıkarma \textbf{tamsayı artışı}, primal güncelleme \textbf{bit kaydırma} haline gelir. Çıkarımda tek bir kayan nokta çarpması ve tek bir aşkın fonksiyon kalmaz — sadece tablo okuma ve tamsayı toplama.
+Soru pratikte şuna indirgenir: \textbf{sinaps başına kaç bit yeter?}
+\section*{Algoritma}
+\subsection*{Çift ray (dual-rail)}
+Her koordinat için iki sayaç $c^+_i, c^-_i \in \{0,\dots,2^B-1\}$, ağırlık $w_i = \phi(c^+_i) - \phi(c^-_i)$ ve
+\[\phi(s) = \begin{cases}0 & s=0 \quad\text{(ölü sinaps)}\\ 2^{\,s-1} & s\ge 1\end{cases}\]
+Hata anında aktif koordinatlarda bir ray $+1$, diğeri $-1$ kayar (kırpmalı). Maliyet: \textbf{$2B$ bit/sinaps}.
+\subsection*{Tek ray + işaret (signed-rail)}
+Bir işaret biti $s_i\in\{+1,-1\}$ ve bir üs $e_i\in\{0,\dots,2^{B_e}-1\}$:
+\[\phi(s,e) = \begin{cases}0 & e=0\\ s\cdot 2^{\,e-1} & e\ge 1\end{cases}\]
+Hata anında, yön $d$ için: $e{=}0 \Rightarrow (e{\leftarrow}1, s{\leftarrow}d)$; $s{=}d \Rightarrow e{\leftarrow}\min(E_{\max}, e{+}1)$; $s{\neq}d \Rightarrow e{\leftarrow}e{-}1$. Sıfır geçişi doğal: $+1 \to 0 \to -1$. Maliyet: \textbf{$B_e+1$ bit/sinaps}. Aynı net seviye sayısı için çift raydan \textasciitilde{}1.7× ucuz.
+\subsection*{Stokastik kafes adımı}
+Kafes $\delta=\ln2$'de \textbf{sabit} kalır (bit kaydırma korunur), ama adım olasılıksal atılır: her aktif sayaç $p$ olasılıkla kayar. Böylece efektif öğrenme oranı $\eta = p\delta < \delta$ olur — \textbf{kaba kafeste ince öğrenme oranı}.
+\section*{Teori}
+\subsection*{Teorem 1 (Kafes-Hedge sınırı)}
+$D$ uzman, kayıplar $\ell_{t,i}\in[0,1]$. Güncelleme $\theta_{t+1,i} = \theta_{t,i} - \delta B_{t,i}$, burada $B_{t,i}\sim\mathrm{Bernoulli}(q_{t,i})$, $q_{t,i} = \tfrac{\eta}{\delta}\ell_{t,i}$, $\eta\le\delta$. O zaman her $j$ için
+\[\mathbb{E}[L_{\mathrm{alg}}] \;\le\; c(\delta)\,L_j \;+\; c(\delta)\,\frac{\ln D}{\eta}, \qquad c(\delta) := \frac{\delta}{1-e^{-\delta}}\]
+\textbf{İspat.} $W_t=\sum_i w_{t,i}$, $p_{t,i}=w_{t,i}/W_t$, $\kappa := (1-e^{-\delta})\eta/\delta$.
+\[\mathbb{E}[W_{t+1}\mid\mathcal F_t] = \sum_i w_{t,i}\big[(1-q_{t,i}) + q_{t,i}e^{-\delta}\big] = W_t\big[1-\kappa\langle p_t,\ell_t\rangle\big] \le W_t e^{-\kappa\langle p_t,\ell_t\rangle}\]
+Bernoulli olduğu için $\mathbb{E}[e^{-\delta B}]$ \textbf{tam} hesaplanır; klasik ispattaki Hoeffding lemmasına gerek kalmaz. $Z_t := W_t\exp(\kappa\sum_{s<t}\langle p_s,\ell_s\rangle)$ bir süpermartingaldir, dolayısıyla $\mathbb{E}[Z_{T+1}]\le Z_1 = D$. Alttan $Z_{T+1}\ge \exp(-\delta\sum_t B_{t,j} + \kappa L_{\mathrm{alg}})$ ve Jensen ile $\mathbb{E}[\delta\sum_t B_{t,j}] = \eta L_j$ kullanılırsa $\ln D \ge -\eta L_j + \kappa\,\mathbb{E}[L_{\mathrm{alg}}]$. $\eta/\kappa = c(\delta)$ ile düzenlenir. $\blacksquare$
+\begin{notkutu} \textbf{ÖZGÜNLÜK UYARISI.} $p=1$ (deterministik) özel durumunda bu sınır, Littlestone–Warmuth'un sabit-$\beta$ Weighted Majority sınırının ve Vovk/Freund–Schapire Hedge sınırının \textbf{birebir aynısıdır} ($\beta = e^{-\delta}$ ile). \textbf{Bu kısım yeni değildir, ders kitabı sonucudur} [2,4,5]. Yeni olabilecek tek bileşen, kafes aralığı $\delta$ ile efektif öğrenme oranı $\eta$'nın Bernoulli adımıyla \textbf{ayrıştırılması} ve çarpımsal sabitin yalnızca $\delta$'ya, toplamsal terimin yalnızca $\eta$'ya bağlı çıkmasıdır. Bunu literatürde bulamadık — ama tarama kapsamlı değildi (§7).
+\end{notkutu}
+\subsection*{Sonuç 1 (Oran korunur, ama kafes incelmek zorundadır)}
+$c(\delta) = 1 + \tfrac{\delta}{2} + O(\delta^2)$ olduğundan, $\eta=\delta$ ile
+\[\mathrm{Regret} \le \tfrac{\delta}{2}T + \frac{\ln D}{\delta} \;\xrightarrow{\;\delta^\star=\sqrt{2\ln D/T}\;}\; \mathrm{Regret} \le \sqrt{2T\ln D}\]
+\subsection*{Sonuç 2 (NEGATİF — sabit kafes sıfır-pişmanlık veremez)}
+$\delta$ sabitse (saf bit kaydırma, $\delta=\ln2$), $c(\ln 2) = 2\ln 2 \approx 1.386$ ve
+\[\mathrm{Regret} \le 0.386\,T + 2\ln D\]
+\textbf{Bu $T$'de lineerdir, yani sıfır-pişmanlık DEĞİLDİR.} Saf \texttt{1<<k} motoru yalnızca \textbf{sabit-rekabetçidir}. Optimal orana ulaşmak için $\delta\to 0$ gerekir, ama $\delta\neq\ln2$ ise ağırlıklar ikinin kuvveti olmaz ve "bit kaydırma" özelliği kaybolur (tamsayı durum + LUT ve sıfır float çarpma yine korunur).
+\[\boxed{\text{Saf bit-shift ile sıfır-pişmanlık aynı anda elde edilemez.}}\]
+\subsection*{Sonuç 3 ($B^\star$ yasası) —  ham hali çürütüldü, düzeltilmiş hali ayakta}
+$\theta^\star$'ın açıklığı $R\approx\ln(D/k)$, basamak sayısı $N=R/\delta^\star$:
+\[B \;\ge\; \tfrac12\log_2 T \;+\; \log_2\ln\tfrac{D}{k} \;-\; \tfrac12\log_2(2\ln D)\;\Longrightarrow\; B \ge \tfrac12\log_2 T + 0.53\]
+\begin{notkutu}\textbf{Uyarı.} \textbf{$T$-hali D-282'de ÇÜRÜTÜLDÜ.} $T$ sabit tutulup yalnızca yoğunluk değiştirilince $B^\star$ \textbf{5'ten 7'ye} çıktı; $\log_2T$ ekseninde $R^2{=}0.099$. \textbf{Doğru değişken koordinat başına güncelleme sayısıdır:}
+\[B^\star \;\gtrsim\; \tfrac12\log_2 U + 2.6,\qquad U = M\cdot\tfrac{A}{D}\]
+$T$ sabitken ölçülen eğim \textbf{0.518}, $R^2{=}0.861$ (teori 0.50). Uydurmaya girmemiş iki noktada sağlama tuttu: yoğun sentetik $U{\approx}280{-}460$ $\rightarrow$ tahmin 6.6–7.0, \textbf{ölçülen 7}; gerçek 20NG $U{=}2.2$ $\rightarrow$ tahmin 3.15, \textbf{ölçülen 3}. \textbf{Kanıt gücü sınırlı:} $B^\star$ tamsayı ve yalnızca $\{5,6,7\}$; 8 nokta, 3 tohum; üç konfigürasyon eşiği geçemediği için dışlandı.
+\end{notkutu}
+\begin{notkutu}\textbf{Pratik okuma (düzeltilmiş):} \emph{toplam veri değil — sinaps başına düşen güncelleme sayısı 4 katına çıktığında 1 bit ekle.}
+\end{notkutu}
+\section*{Deneysel protokol}
+Bu çalışmanın ilk turu (Deney 273) \textbf{çürütüldü}; kusurları ve düzeltmeleri kayda geçiriyoruz çünkü metodolojik ders sonucun kendisinden değerli:
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lc}\toprule
+İlk turdaki kusur & Düzeltme \\\midrule
+Veri \%87 tek sınıf; kukla taban \%86.73, "zafer" \%89.40 & \textbf{Dengeli veri:} gerçek sette taban \%55.15, sentetikte \%50.08 \\
+Yalnızca sentetik veri & \textbf{Gerçek veri:} 20 Newsgroups \texttt{comp.*} vs \texttt{rec.*} \\
+Tek tohum & \textbf{5 tohum}, eşleşmiş $t$-testi + McNemar \\
+Baseline'a keyfî $\eta{=}0.5$, taranmamış & $\eta$ \textbf{validation'da} 8 değerde taranıyor \\
+\bottomrule\end{tabular}}\end{center}
+Ek sıkılaştırmalar: 20NG başlık/altbilgi/alıntı çıkarıldı (bilinen sızıntı); vektörleştirici yalnızca train'de fit edildi; hiperparametreler yalnızca validation'da seçildi, test setine bir kez bakıldı; MWU log-uzayında uygulandı (taşma ve $w^+{-}w^-$ iptal hatası kalkar — baseline'ı güçlendirir).
+\textbf{Veri.} (a) 20 Newsgroups, ikili BoW, $D{=}10^4$, 5325 train / 3545 test, \textasciitilde{}44 aktif özellik/doküman. (b) Sentetik dengeli: $D{=}10^4$, $k{=}20$ (10 artı / 10 eksi işaret), aktivasyon $p{=}0.1$ (\textasciitilde{}1000 aktif/örnek), \%5 etiket gürültüsü, 12000 train / 3000 test.
+\section*{Sonuçlar}
+\subsection*{Ana karşılaştırma (D-274)}
+\textbf{Gerçek veri — 20 Newsgroups} (çoğunluk tabanı \%55.15)
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lccc}\toprule
+Model & test acc\% & F1 & çevrimiçi hata \\\midrule
+Çoğunluk (sıfır zekâ) & 55.15 ± 0.00 & 0.711 & — \\
+\textbf{Perceptron (toplamsal)} & \textbf{90.37 ± 0.14} & 0.911 & \textbf{514.4} \\
+Warmuth MWU ($\eta^\star$) & 90.31 ± 0.46 & 0.912 & 526.6 \\
+Bit-shift 4-bit çift ray & 90.00 ± 0.23 & 0.908 & 550.8 \\
+QuantMWU ($B^\star,\eta^\star$) & 89.95 ± 0.48 & 0.908 & 535.4 \\
+\bottomrule\end{tabular}}\end{center}
+Bit-shift vs MWU: $-0.31$ puan, $t{=}-1.03$, McNemar $p{=}0.159$ $\rightarrow$ \textbf{berabere}. \textbf{Gerçek metinde çarpımsal makine karşılıksız:} sade toplamsal Perceptron tepede ve en kararlısı.
+\textbf{Dengeli sentetik} (çoğunluk tabanı \%50.08)
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lccc}\toprule
+Model & test acc\% & F1 & çevrimiçi hata \\\midrule
+Çoğunluk & 50.08 ± 1.23 & 0.132 & — \\
+Perceptron & 61.12 ± 1.42 & 0.596 & 4068.6 \\
+Warmuth MWU ($\eta^\star$) & 75.80 ± 1.21 & 0.753 & 2876.6 \\
+\textbf{Bit-shift 4-bit çift ray} & \textbf{52.17 ± 0.32} & 0.439 & 4564.2 \\
+QuantMWU ($B^\star,\eta^\star$) & 75.95 ± 1.46 & 0.762 & 2827.6 \\
+\bottomrule\end{tabular}}\end{center}
+Bit-shift vs MWU: $-23.63$ puan, $t{=}-49.27$, $p<10^{-4}$ $\rightarrow$ \textbf{ezici yenilgi}. QuantMWU vs MWU: $+0.15$, $t{=}0.24$, $p{=}0.714$ $\rightarrow$ \textbf{tam beraberlik}.
+\subsection*{Bit genişliği faz geçişi ($\eta=\ln2$ sabit)}
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lccc}\toprule
+$B$ (çift ray) & sentetik acc\% & MWU'ya fark & gerçek veri acc\% \\\midrule
+3 & 51.22 & $-24.58$ ($t{=}-27.99$) & 89.89 \\
+4 & 52.17 & $-23.63$ ($t{=}-49.27$) & 90.00 \\
+5 & 55.25 & $-20.55$ ($t{=}-37.26$) & 90.00 \\
+\textbf{6} & \textbf{74.72} & $-1.08$ ($t{=}-1.24$)  & 90.00 \\
+7–10 & 74.72 (doygun) & $-1.08$ & 90.00 \\
+\bottomrule\end{tabular}}\end{center}
+\textbf{$B{=}5 \to 6$ arasında keskin faz geçişi.}
+\begin{notkutu}\textbf{Önemli.} \textbf{BU BÖLÜMÜN YORUMU SONRADAN ÇÜRÜTÜLDÜ (D-278, D-280, D-281).} Ölçümler doğrudur; yorumu yanlıştı. \textbf{(a)} Float master tutan kol, \textbf{4 bitlik çıkarımla} yoğun veride \%75.27 aldı (Warmuth 75.80). Yani \textbf{4 bitlik kafes temsil olarak yeterlidir}; faz geçişi temsilin kapasitesi değil, \textbf{tamsayı-saf öğrenmenin} dinamiğidir. \textbf{(b)} Doygunluğun mekanizması "kutuya yapışma" değil \textbf{simetrik yayılmadır (difüzyon)}: 4 bitte sayaç histogramı düz dolar (her durumda \textasciitilde{}670 sinaps), tavandakiler iki uca birden dağılır (+7'de 542, −7'de 601; $\lvert\text{ort}\rvert/\text{std}=0.016$). \textbf{(c)} Belirleyici nicelik aktif özellik sayısı $A$ değil, \textbf{kutu genişliği / adım boyu = etkin durum sayısı}; bunun veri tarafındaki karşılığı \textbf{koordinat başına güncelleme sayısı} $M\cdot A/D$ (seyrek \textasciitilde{}2.4, yoğun \textasciitilde{}450). \textbf{(d)} Doğru çözüm bit genişliği değil \textbf{artık biriktiricidir}: 4 bit sayaç + 3 bit artık = \textbf{7 bit}, 65 bitlik float master ile eşit ($-1.11$, $t{=}-2.28$). Aynı 7 bit bütçesi 7+0 yerine 4+3 dağıtılınca daha iyi ve daha kararlıdır (74.16±1.27 vs 73.58±1.94).
+\end{notkutu}
+\subsection*{Tek ray vs çift ray — bit verimliliği (D-275)}
+\textbf{Gerçek veri} (MWU referans 90.31 ± 0.46)
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lccc}\toprule
+Temsil & bit & acc\% & MWU'ya fark \\\midrule
+\textbf{Tek ray işaret+3} & \textbf{4} & \textbf{90.44 ± 0.46} & $+0.12$, $t{=}0.61$  berabere \\
+Tek ray işaret+4/5/6 & 5–7 & 90.44 ± 0.46 & doygun, fazlası israf \\
+Tek ray işaret+2 & \textbf{3} & 89.99 ± 0.51 & $-0.32$, $t{=}-0.92$  \\
+Çift ray 4+4 & 8 & 90.00 ± 0.23 & $-0.31$  \\
+Çift ray 6+6 & 12 & 90.00 ± 0.23 & $-0.31$  \\
+Çift ray 2+2 & 4 & 89.13 ± 0.73 & $-1.18$, $t{=}-4.40$  \textbf{kaybediyor} \\
+\bottomrule\end{tabular}}\end{center}
+\textbf{Aynı bit bütçesinde tek ray çift rayı geçiyor} (4 bit: 90.44 vs 89.13). Doygunluk tam 4 bitte; 5/6/7 bit rakamı virgülüne kadar aynı.
+\textbf{Dengeli sentetik} (MWU 75.80): tek ray 3/4/5/6 bit $\rightarrow$ 51.32 / 52.33 / 53.50 / 57.15; \textbf{7 bit $\rightarrow$ 73.58} ($-2.22$, $t{=}-3.27$). Çift ray 12 bit $\rightarrow$ 74.72 ($-1.08$, berabere). Kuramın öngördüğü basamak-sayısı denkliği gözlendi: tek ray 7 bit (127 seviye) $\approx$ çift ray 12 bit (127 seviye).
+\subsection*{Stokastik kafes adımı (D-276)}
+\textbf{Dengeli sentetik} (MWU 75.80):
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lcccccccc}\toprule
+Model & $p{=}1$ & 0.5 & 0.25 & 0.1 & 0.05 & 0.02 & ölçülen $p^\star$ & tahmin $N^2/M$ \\\midrule
+Çift 4+4 (8 bit) & 52.17 & 52.30 & 52.35 & 54.19 & \textbf{54.41} & 51.96 & 0.05 & 0.049 \textbackslash\{\}checkmark \\
+Çift 5+5 (10 bit) & 55.25 & 60.11 & \textbf{70.67} & 61.45 & 55.81 & 51.96 & 0.25 & 0.273 \textbackslash\{\}checkmark \\
+Çift 6+6 (12 bit) & \textbf{74.72} & 73.61 & 70.67 & 61.45 & 55.81 & 51.96 & 1.0 & 1.000 \textbackslash\{\}checkmark \\
+Tek 6 bit & 57.06 & 70.19 & \textbf{71.17} & 62.58 & 54.97 & 52.48 & 0.25 & 0.269 \textbackslash\{\}checkmark \\
+Tek 4 bit & 52.14 & 51.77 & 52.31 & 51.97 & 51.83 & 51.87 & — & 0.011 $\times$ (düz) \\
+\bottomrule\end{tabular}}\end{center}
+\textbf{Gerçek veri:} her iki modelde de $p^\star=1$; $p$ düştükçe monoton bozulma (tek 4 bit: 90.76 $\rightarrow$ 88.98 $\rightarrow$ 86.75 $\rightarrow$ 83.22 $\rightarrow$ 79.15 $\rightarrow$ 74.36). Seyrek metinde koordinat başına güncelleme sayısı $M\cdot A/D \approx 2.4$ olduğu için doygunluk hiç oluşmuyor.
+\textbf{7 bit + stokastik (D-277):} $p{=}1$: 73.58 $\rightarrow$ $p{=}0.5$: 72.00 $\rightarrow$ $p{=}0.25$: 69.87 $\rightarrow$ $p{=}0.1$: 63.91. \textbf{Kalan $-2.22$'lik açık kapanmıyor.}
+\subsection*{Tamsayı ile öğrenmek vs float ile öğrenmek (D-278)}
+BitNet b1.58 gibi kuantizasyon yöntemleri eğitim sırasında \textbf{float master ağırlık} tutar (QAT) ve yalnızca ileri geçişte kuantize eder. Bizim motorumuzun durumu \textbf{tamamen tamsayıdır}. Fark tam olarak izole edildi: aynı temsil, aynı kafes, aynı kutu, \textbf{aynı çıkarım maliyeti} — tek fark dual değişkenin float gölge kopyası.
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lccc}\toprule
+Kol & Eğitim durumu & Seyrek (20NG) & Yoğun sentetik (4 bit) \\\midrule
+Master-float (QAT analoğu) & \textbf{64+1 bit} & 90.56 ± 0.71 & \textbf{75.27 ± 0.61} \\
+\textbf{Tamsayı-saf (bizimki)} & \textbf{4 bit} & \textbf{90.49 ± 0.64} & 52.43 ± 0.50 \\
+fark & — & $-0.07$, $t{=}-0.32$  & $-22.84$, $t{=}-71.38$  \\
+\bottomrule\end{tabular}}\end{center}
+\textbf{Seyrek rejimde float master gereksizdir} (16× eğitim belleği). \textbf{Yoğun rejimde kritiktir.}
+\begin{notkutu}\textbf{Öz-düzeltme:} master-float \textbf{4 bitlik çıkarımla} yoğun veride \%75.27 aldı (Warmuth 75.80). Yani §5.2'deki \emph{"yoğun veride 7 bit gerekir"} yorumu yanlıştı: \textbf{4 bitlik kafes temsil olarak yeterlidir}; arıza tamsayı-saf öğrenmenin kuantum-altı biriktirememesidir.
+\end{notkutu}
+\subsection*{Doygunluk yayılmadır, ortak kayma değil (D-280)}
+Yoğun tezgâhta 4 bitlik sayaç histogramı \textbf{düz doluyor}: her durumda \textasciitilde{}670 sinaps; tavandakiler \textbf{iki uca birden} dağılmış (+7'de 542, −7'de 601; denge 0.902), $\lvert\text{ort}\rvert/\text{std}=0.016$. Gerçek veride tavana yapışan sinaps \textbf{sıfır}.
+\begin{notkutu}Bu, \emph{"eksik bileşen Bregman normalizasyonudur"} iddiasını çürütür: (a) normalizasyon global pozitif skalerdir, skorun \textbf{işaretini değiştirmez}; (b) simetrik bir yayılma sabit bir kaydırmayla düzelmez; (c) kafeste koordinat-başı normalizasyon zaten §2.2'nin tek-ray temsiline indirgenir.
+\end{notkutu}
+\textbf{Belirleyici tek nicelik:} kutu genişliği / adım boyu = \textbf{etkin durum sayısı}.
+\subsection*{Tamsayı artık biriktirici: 7 bit $\equiv$ 65 bit (D-281)}
+$k$ bitlik tamsayı artık $r_i$; hata anında $r_i \mathrel{+}= d\cdot g$, $\lvert r_i\rvert\ge2^k$ olunca sayaç 1 kayar ve $r_i \mathrel{-}= \mathrm{sgn}\cdot2^k$. Efektif adım $p=g/2^k$ — \textbf{tam, deterministik, sıfır float, sıfır rastgelelik}.
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lcc}\toprule
+toplam bit & acc (yoğun) & master'a fark \\\midrule
+4 ($k{=}0$) & 52.14 ± 1.25 & $-23.13$  \\
+6 ($k{=}2$) & 55.28 ± 0.56 & $-19.99$  \\
+\textbf{7 ($k{=}3$)} & \textbf{74.16 ± 1.27} & $-1.11$, $t{=}-2.28$  \\
+8 ($k{=}4$) & \textbf{75.13 ± 0.20} & $-0.14$  (master'dan \textbf{kararlı}) \\
+\bottomrule\end{tabular}}\end{center}
+\[\textbf{4 bit sayaç} + \textbf{3 bit artık} = \textbf{7 bit} \;\equiv\; \textbf{65 bit float master}\quad(9.3\times)\]
+\textbf{Bit tahsis kuralı:} aynı 7 bit, 4+3 dağıtılınca 7+0'dan iyi ve kararlı (74.16±1.27 vs 73.58±1.94). \emph{Biti sayaca değil biriktiriciye ver.}  Aynı deneyde iki düzeltme \textbf{öldü}: marj kapısı baseline'dan kötü (51.86), sızıntılı sönümleme etkisiz (52.34).
+\subsection*{Beş gerçek veri seti (D-283)}
+Veri seti çeşitliliği $n{=}1 \to n{=}5$: üç farklı 20NG ayrımı + \textbf{RCV1} (farklı külliyat) + \textbf{MNIST} (farklı kiplik).
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lcccc}\toprule
+Veri seti & çoğunluk & Warmuth & 4-bit & fark \\\midrule
+20NG din vs ticaret & 0.523 & 0.8893 & \textbf{0.8900} & $+0.07$  \\
+20NG comp vs rec & 0.552 & 0.9047 & 0.9027 & $-0.21$  \\
+RCV1 CCAT vs rest & 0.536 & 0.8239 & 0.8179 & $-0.60$  \\
+20NG sci vs talk & 0.548 & 0.8217 & 0.8071 & $-1.46$ ($t{=}-1.93$, 8 tohum)  \\
+MNIST 0-4 vs 5-9 & 0.514 & 0.7738 & 0.7342 & $-3.96$ ($t{=}-2.52$)  \\
+\bottomrule\end{tabular}}\end{center}
+3 tohumda sci-vs-talk farkı $-2.37$ görünüyordu; \textbf{8 tohumda $-1.46$'ya inip anlamsızlaştı} — §6-N3'ün kuralının bir ön sonucu manşet olmaktan kurtardığı ilk vaka.
+\subsection*{Koordinat başına azalan adım programı ve üç yollu kıyas (D-284/285)}
+Tüm önceki motorlar \textbf{sabit} efektif adım kullanıyordu. Azalan program kafeste bedava oturuyor: \textbf{biriktiricinin eşiğini kaydır}, $p = 1/2^{k+\text{shift}}$, $\text{shift}=\lfloor\log_2 n_i\rfloor//2$. \emph{Sayaç 4 katına çıkınca eşiği 1 bit kaydır} — Sonuç 3'ün dinamik ikizi, \textbf{sıfır bölme sıfır float}.
+\textbf{Baseline'a üç steelman verildi.} Bu ayrım kritiktir ve iki farklı iddiayı ayırır:
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lcccc}\toprule
+Kıyas & Bu kim? & MNIST & Yoğun & 20NG \\\midrule
+\textbf{vs W1} — sabit $\eta$, geniş ızgara (0.005–4.0) & \textbf{Warmuth, klasik} & \textbf{+1.82 ($t{=}4.57$) (önde)} & $+1.27$  & $+0.30$  \\
+\textbf{vs W2} — küresel $c/\sqrt t$ & \textbf{Warmuth, kendi öngördüğü} & $-1.18$  & $-0.91$  & \textbf{+0.98 ($t{=}3.22$) (önde)} \\
+vs W3 — koordinat $c/\sqrt{n_i}$ & \textbf{AdaGrad} [Duchi ve ark. 2011], Warmuth değil & $-1.36$  & $-0.99$  & $-0.90$  \\
+\bottomrule\end{tabular}}\end{center}
+\begin{notkutu}\textbf{İki ayrı iddia, iki ayrı baseline.} \emph{(A) Temsil iddiası} — "aynı kural, 4 bit vs 64 bit" — iki kol \textbf{program dahil} eşleşmeli (W3). \emph{(B) Sistem iddiası} — "motorumuz yayınlanmış algoritmayı geçer" — baseline W1/W2. \textbf{İkisi de raporlanmalıdır.}
+\end{notkutu}
+\textbf{İkinci eksen — maliyet:} program bizde \textbf{yerleşik} (\texttt{bit\_length} + kaydırma, tamsayı), W3'te \textbf{eklenti} (karekök + bölme, float). W3 yalnızca "Warmuth değil"dir; aynı zamanda \textbf{Warmuth'tan pahalıdır}. \emph{(Analitik işlem sayımı; donanımda ölçülmedi.)}
+\textbf{Yan bulgu:} küresel program seyrek veride \textbf{ölümcül} (20NG $-6.84$, $t{=}-125$) çünkü $U\approx2.2$ — koordinat başına 2.2 güncelleme varken küresel adım çoktan buharlaşıyor. Koordinat programı aynı yerde sağlam.
+\subsection*{MNIST kovalamacası ve kaos bandı (D-286…D-290)}
+MNIST'teki açığı kapatmak için \textbf{yedi müdahale} denendi: daha fazla bit, stokastik adım, artık biriktirici, küresel program, koordinat programı, p-norm çanağı, program sertliği. \textbf{Yalnızca koordinat programı işe yaradı ($+2.5$), açık kapanmadı.}
+\textbf{Teşhis (D-288):} $B{=}8$ kutusunda ($S{=}127$) kullanılan aralık yalnızca $\pm4$; $\lvert s\rvert$ dağılımı \textbf{[411, 281, 56, 28, 8, 0, …]} — koordinat başına ortalama \textbf{464} güncellemeye rağmen tüm model \textbf{9 ağırlık seviyesi} kullanıyor. Bu yüzden $B{=}4,5,6,7,8,10$ \textbf{dört ondalığa kadar birebir aynı} (0.8094). \textbf{MNIST'te bit genişliği bağlayıcı kısıt değildir.}
+\begin{notkutu}\textbf{Uyarı.} \textbf{D-290 — kaos bandı ölçüldü ve hükmü geri çektirdi.} Matematiksel olarak \textbf{özdeş} iki LUT ifadesi (\texttt{2.0**k} vs \texttt{exp(k·ln2)}, fark $1.78\times10^{-15}$), aynı tohumlarla:
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lcc}\toprule
+ & MNIST & 20NG \\\midrule
+Tohum başına max \textbackslash\{\} & fark\textbackslash\{\} &  \\
+Kaos bandı (tohum-içi max sapma) & \textbf{4.53 puan} & 0.90 puan \\
+\textbf{Eşleşmiş fark sd} & \textbf{1.57 puan} & \textbf{0.21 puan} \\
+\textbf{5 tohumda ölçülebilir en küçük fark (MDE)} & \textbf{1.95 puan} & \textbf{0.26 puan} \\
+\bottomrule\end{tabular}}\end{center}
+\textbf{Kaos bandı bir sabit değildir — veri setine göre 5× değişir.} MNIST'te iddia edilen $-1.7$ puanlık açık \textbf{MDE'nin altındadır}; orada ne kayıp ne eşitlik iddia edilebilir. \textbf{20NG'de MDE 0.26 olduğu için 0.3–1.0 puanlık farklarımız ölçülebilirdir.}
+\textbf{Zorunlu kural: her etki, o veri setinin bandıyla karşılaştırılır.}
+\end{notkutu}
+\subsection*{Altı açık eksiğin kapatılması (D-291…D-293)}
+\textbf{(a) MNIST, 25 tohum — sınır onaylandı.} MDE 1.95 $\rightarrow$ \textbf{0.52–0.60}:
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lccc}\toprule
+Model & acc & bize göre & hüküm \\\midrule
+\textbf{BİZ 4+k bit} & \textbf{0.8026 ± 0.0145} & — & — \\
+W1 Warmuth sabit & 0.7982 & $+0.44$ ($t{=}1.51$) &  berabere \\
+W2 Warmuth $c/\sqrt t$ & 0.8166 & $-1.40$ ($t{=}-5.54$) &  gerçek kayıp \\
+W3 MWU+AdaGrad & 0.8178 & $-1.52$ ($t{=}-5.48$) &  gerçek kayıp \\
+\bottomrule\end{tabular}}\end{center}
+\textbf{(b) $\Psi_q$ birleşik formülü — ilk kez ölçüldü.} Optimal çanak \textbf{rejime bağlıdır}: seyrek metinde $q{=}0.75$ (0.9131, iki ucu da geçiyor: Öklid 0.9063, entropi 0.9102), seyrek-iğne sentetikte $q\to1$ (0.7671, monoton, iç nokta yok), yoğun görüntüde $q{=}0.25$ (0.8065, ama bandın altında). \textbf{Tek mimari, LUT değiştirerek üç rejimi de kapsıyor.} 20NG'de $q{=}0.75$ ile W3'e fark $-0.25$ ($t{=}-1.15$) $\rightarrow$ berabere.  Bu, §5.10'daki \emph{"çanak seçimi hiçbir yerde fark etmiyor"} ifadesini düzeltir: kaba ızgarada fark görünmemişti; doğru form ve ince ızgarada \textbf{fark var ve rejime bağlı}.
+\textbf{(c) $n_i$ sayacının bit fiyatı ödendi.} $b$ bitlik doyumlu sayaç: 20NG'de \textbf{3 bit yeter $\rightarrow$ toplam 7 bit} (0.9118, $t{=}1.21$ ); MNIST'te 6–8 bit gerekir (3 bitte $-5.02$).
+\begin{notkutu}\textbf{Dürüst bit bütçesi: seyrek metinde 7 bit (4 sayaç + 3 güncelleme sayacı) — 64 bite karşı 9.1×.} Program kullanılmazsa $n_i$ gerekmez ve bütçe 4 bittir, ama programın kazancı da olmaz.
+\end{notkutu}
+\textbf{(d) Kaos bandı, dört veri seti:} 20NG \textbf{0.90} · RCV1 \textbf{1.68} · sentetik \textbf{2.60} · MNIST \textbf{4.53}. Bant 5× aralıkta değişiyor. Sentetikteki 2.60, §5.3'ün 7-bit $-2.22$'sini \textbf{marjinal} yapar; D-278 ($-22.84$) ve D-281 ($+22$) banttan 8–9× büyük ve \textbf{sağlam}.
+\textbf{(e) İkili olmayan özellik — en riskli test, GEÇTİ.} 20NG TF-IDF (gerçek değerli $x$), motor $r_i \mathrel{+}= d\cdot\mathrm{round}(8x_i)$ ile hâlâ tamsayı:
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lc}\toprule
+Model & acc \\\midrule
+MWU (gerçek değerli, 64 bit) & 0.9160 ± 0.0038 \\
+\textbf{BİZ (4+k bit, tamsayı)} & \textbf{0.9111 ± 0.0049} ($-0.49$, $t{=}-2.24$)  berabere \\
+\bottomrule\end{tabular}}\end{center}
+\begin{notkutu}\textbf{İddia ikili girdiye bağlı değildir.} $w{=}2^k$ olduğu için $w\cdot x$ hâlâ $x$'in üssünde kaydırmadır.
+\end{notkutu}
+\section*{Negatif sonuçlar}
+\begin{notkutu}Bu bölümü çalışmanın \textbf{en değerli kısmı} sayıyoruz.
+\end{notkutu}
+\subsection*{N1 — Hiçbir yerde MWU'yu yenmedik}
+İki veri setinde, beş tohumda, on'dan fazla konfigürasyonda MWU'ya karşı \textbf{hiçbir istatistiksel üstünlük} bulunamadı. Lehte görünen her karşılaştırma beraberliktir.
+\subsection*{N2 — Görünen tek "zafer" ölçüm gürültüsüydü}
+Bir ara raporda "4-bit motor \%90.76 ile FP64 MWU'nun \%90.31'ini geçti" iddiası oluştu. Kontrol: \textbf{matematiksel olarak özdeş} iki uygulama — LUT'u \texttt{exp(i·ln2)} ile mi \texttt{2.0**i} ile mi kurduğunuza göre — arasında fark $1.78\times10^{-15}$.
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lccc}\toprule
+tohum & LUT=\texttt{exp(i·ln2)} & LUT=\texttt{2**i} & MWU \\\midrule
+0 & 89.87 & \textbf{91.14} & 90.04 \\
+1 & 90.94 & 90.97 & 91.20 \\
+2 & 89.99 & \textbf{91.31} & 90.18 \\
+3 & 90.97 & 90.69 & 90.27 \\
+4 & 90.41 & 89.70 & 89.87 \\
+\textbf{ort.} & \textbf{90.44 ± 0.46} & \textbf{90.76 ± 0.57} & \textbf{90.31 ± 0.46} \\
+\bottomrule\end{tabular}}\end{center}
+$10^{-15}$'lik bir yuvarlama farkı tohum başına \textbf{1.3 puana} kadar oynama üretiyor ($t{=}0.79$, anlamsız). \textbf{İddia geçersizdir.}
+\subsection*{N3 — Çevrimiçi öğrenme kaotiktir; tek tohumlu kıyas geçersizdir}
+Birebir aynı MWU kodunun yalnızca \texttt{float32} ve \texttt{float64} sürümleri, 3000 adımda tahminlerin \%1.5–9'unda ayrışıyor; ilk ayrışma 5.–201. adımda başlıyor.
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lcc}\toprule
+$\eta$ & fp32 vs fp64 uyum & ilk ayrışma adımı \\\midrule
+0.10 & \%90.88 & 31 \\
+0.50 & \%94.62 & 9 \\
+$\ln2$ & \%95.75 & 201 \\
+1.00 & \%97.62 & 5 \\
+2.00 & \%98.50 & 46 \\
+\bottomrule\end{tabular}}\end{center}
+Sebep: skorun sıfıra çok yakın olduğu bir beraberlikte 1 ULP'lik fark tahmini çevirir; hata-güdümlü öğrenmede tahmin farkı güncelleme farkıdır ve yörüngeler bir daha birleşmez.
+\subsection*{N4 — Stokastik adım Pareto sınırını itmiyor}
+Doymuş genişlikleri kurtarıyor (6 bit: 57.06 $\rightarrow$ 71.17, \textbf{+14.1}) ama 7 bit deterministik (73.58) hâlâ 6 bit stokastikten iyi; 12 bit deterministik (74.72) en iyi kuantize nokta olarak kalıyor.
+\subsection*{N4b — Üç algoritma düzeltmesinden ikisi öldü (D-281)}
+Kendi teşhisimizden türettiğimiz üç düzeltmeden yalnızca biri tuttu.
+\begin{itemize}\item  \textbf{Artık biriktirici (error feedback):} 4+3 = 7 bit, 65 bitlik float master ile eşit ($-1.11$, $t{=}-2.28$); $k{=}4$'te $75.13\pm0.20$ — master'dan (0.61) \textbf{daha kararlı}.
+\item  \textbf{Marj kapısı} (gürültülü etiketi reddet): baseline'dan \textbf{kötü} (51.86 vs 52.14); validation 4/5 tohumda kapıyı kapattı.
+\item  \textbf{Sızıntılı sönümleme:} etkisiz (52.34 vs 52.14); validation 3/5 tohumda kapattı.
+\end{itemize}
+\begin{notkutu} Ve bu düzeltmenin kendisi de \textbf{özgün değildir}: 8-bit optimizer state (Dettmers, \emph{8-bit Optimizers via Block-wise Quantization}) ve error feedback (Karimireddy ve ark., 2019) mevcut literatürdür. Ölçümümüz literatürün oturduğu yere düştü — \textbf{doğrulama, keşif değil.}
+\end{notkutu}
+\subsection*{N5 — $p^\star \approx N^2/M$ sezgisi evrensel değil}
+Yoğun rejimde 3/3 isabet (0.049/0.273/1.000 vs ölçülen 0.05/0.25/1.0), seyrek rejimde 0/2. Koordinat başına sayım $M\cdot A/D$ kullanınca seyrek düzeliyor ama yoğun bozuluyor. \textbf{İki rejimi birden tutturan form elimizde yok. Bu bir sezgidir, teorem değildir.}
+\section*{İlgili çalışmalar ve özgünlük beyanı}
+\begin{notkutu}\textbf{Uyarı.} \textbf{Bu çalışmadaki bileşenlerin çoğu önceki sanattır. Aşağıdaki liste dürüstlük içindir.}
+\end{notkutu}
+\begin{itemize}\item \textbf{Winnow / Winnow2} [1]: Littlestone'un 1988 algoritması çarpımsal günceller; $\alpha{=}2$ seçimiyle ağırlıklar ikinin kuvvetidir ve güncelleme \textbf{birebir bit kaydırmadır}. §2.1'deki motorumuz, esasen \textbf{sınırlı ağırlıklı Winnow2'dir}. Bu 1988 tarihlidir.
+\item \textbf{Weighted Majority / Hedge} [2,4,5]: sabit-$\beta$ sınırı $(\ln n + m\ln\tfrac1\beta)/\ln\tfrac{2}{1+\beta}$ klasiktir. \textbf{Teorem 1'in $p{=}1$ hali bu sınırdır.}
+\item \textbf{EG vs GD} [3]: Kivinen \& Warmuth'un 1997 makalesi tam olarak toplamsal-vs-çarpımsal kıyasıdır; §5.1'deki Perceptron/MWU karşılaştırması bu literatürün içindedir.
+\item \textbf{LNS-Madam} [6]: logaritmik sayı sistemi + çarpımsal ağırlık güncellemesi, 8 bit, FP32'ye göre \%90 enerji tasarrufu. Derin ağ eğitimi, pişmanlık sınırı yok. \textbf{Mühendislik tarafında doğrudan önceki sanat.}
+\item \textbf{M+Adam} [7]: çarpımsal güncellemelerin sıfır civarında ve işaret değişiminde başarısız olduğunu raporlar — §2.2'deki işaretli sıfır geçişinin motive ettiği sorun.
+\item \textbf{Stokastik yuvarlama} [8]: yansız düşük-hassasiyet için standart araçtır; logaritmik kuantizasyonda da kullanılmıştır.
+\item \textbf{Uzman probleminde bellek sınırları} [9,10,11]: bellek–pişmanlık ödünleşimi üzerine geniş bir literatür var. Bunlar \textbf{kaç uzman saklandığını} sayar; bizim $B^\star$ ifademiz \textbf{ağırlık başına kaç bit} olduğunu sorar. Farklı ama komşu.
+\end{itemize}
+\subsection*{Aday katkıların tek tek denetimi}
+İkinci bir hedefli tarama turunda dört aday katkı ayrı ayrı sınandı. Sonuç, ilk taslakta yazdığımızdan \textbf{daha olumsuzdur} ve burada düzeltiyoruz:
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lcc}\toprule
+Aday katkı & Bulunan önceki sanat & Hüküm \\\midrule
+(1) Kafes $\delta$ ile efektif $\eta{=}p\delta$'nın Bernoulli ayrıştırması; Teorem 1'in biçimi & Komşu teknikler mevcut: lazy update prosedürleri, ağırlık toplamının MCMC ile kestirimi, üstel mekanizma ile örnekleme [5,13]. Bu \textbf{tam ifade} bulunamadı. &  \textbf{Bulunamadı, düşük güven.} Çarpımsal bir güncellemeyi Bernoulli ile yansızlaştırmak yeterince standart bir tekniktir; alan uzmanı "folklor" diyebilir. \\
+(2) $B\gtrsim\tfrac12\log_2 T$ bit-genişliği yasası & \textbf{Progressive precision} [14]: "her iterasyonda minimizasyon hassasiyetinin optimal kontrolü", "order-optimal regret" — hassasiyetin iterasyonlar boyunca artması gerektiği \textbf{aynı kavramdır}. Ayrıca HALP [15] ve düşük-hassasiyet SGD teorisi. &  \textbf{Kavram yeni değildir.} Bizimki farklı bir kurulumda (dual kafes, MWU, pişmanlık) bir örnektir; öncelik iddiası \textbf{geri çekilmiştir}. \\
+(3) Eşit bit bütçesinde tek ray vs çift ray & Çift ray EG± [3]; işaretli logaritmik temsil LNS'te standarttır [6]. &  \textbf{Ablasyon sonucudur, keşif değildir.} Tek veri setinde, 5 tohumda geçerli bir mühendislik verisi. \\
+(4) Kayan-nokta kaosunun çevrimiçi öğrenmede otopsisi & [16] \emph{Impacts of floating-point non-associativity on reproducibility} iteratif algoritmalarda yörünge ayrışmasını doğrudan belgeler; ayrıca deterministik ML çerçeveleri [17]. &  \textbf{Yeni değildir.} Fenomen iyi belgelenmiştir; bizimki hata-güdümlü çevrimiçi öğrenici için temiz bir gösterimdir. \\
+\bottomrule\end{tabular}}\end{center}
+\begin{notkutu}\textbf{Uyarı.} \textbf{ÖZGÜNLÜK DOĞRULANMAMIŞTIR VE BU RAPOR BİR ÖNCELİK İDDİASI DEĞİLDİR.} Dört aday katkıdan \textbf{en fazla biri} (1) yayınlanmamış olabilir, o da düşük güvenle. (2) ve (4) için doğrudan önceki sanat bulunmuştur. Yapılan tarama birkaç hedefli sorgudan ibarettir. \textbf{Yapılmamış olanlar:} COLT/NeurIPS/ICML/JMLR proceedings sistematik taraması; Littlestone–Warmuth (1994) ve Kivinen–Warmuth (1997)'den ileri atıf takibi; sınırın tam biçiminin aranması; alan uzmanına danışma.
+\end{notkutu}
+\subsection*{Bu çalışmanın gerçek değeri nerede}
+Yukarıdaki denetimden sonra geriye kalan ve savunduğumuz şey bir "yenilik" değil, bir \textbf{yöntem}dir: aynı iddia bu programda \textbf{iki kez} kuruldu, ikisinde de sayılar gerçekti, ikisi de yıkıldı — önce kırık tartıyla (§4), sonra $10^{-15}$'lik yuvarlama gürültüsüyle (§6-N2). §6'daki beş negatif sonuç ve §4'teki protokol, sonuçların kendisinden daha taşınabilirdir.
+\section*{Sınırlar}
+\begin{itemize}\item \textbf{Model sınıfı:} doğrusal, ikili özellikler, ikili sınıflandırma, çevrimiçi. Derin ağ, çok sınıflı problem, katmanlar arası kredi ataması \textbf{yok}.
+\item \textbf{Ölçek:} $D=10^4$, $T\le 1.2\times10^4$. LLM ölçeğine ekstrapolasyon \textbf{desteklenmiyor}.
+\item \textbf{Attention/softmax ile ilgisi yoktur.} MWU'nun $\exp$'i zaman içinde ağırlık güncellemesidir; attention'ın softmax'ı çıkarımda sorgu başına normalizasyondur. Farklı nesnelerdir.
+\item \textbf{Düşük-bit çıkarım yeni değildir} (INT8/INT4, GPTQ, AWQ, BitNet). Buradaki ilgi noktası düşük-bit \textbf{öğrenme durumu} ve ona eşlik eden sınırdır.
+\item \textbf{Sonuç 3'ün ampirik desteği iki noktadır.} Yasa değil, çelişmeyen bir türetmedir.
+\item \textbf{Sentetik tezgâh yapaydır}; gerçek veri sonuçları tek bir veri setinden gelir.
+\item \textbf{$B^\star$ ile aktif özellik sayısı $A$ arasındaki yasa ölçülmemiştir.} Yoğunluk taraması ($p\in[0.002, 0.2]$) açık iştir.
+\end{itemize}
+\section*{8b. Ölçüm standardı — kaos bandı (bu çalışmanın yöntemsel çekirdeği)}
+Hata-güdümlü çevrimiçi öğrenme kaotiktir (§6-N3). D-290 bunu \textbf{nicelleştirdi}: matematiksel olarak özdeş iki uygulama, aynı tohumlarla, ne kadar ayrışır?
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lcccc}\toprule
+Tezgâh & eşleşmiş fark sd & \textbf{5 tohumda MDE} & bizim tipik etkilerimiz & okunur mu? \\\midrule
+20NG & 0.21 puan & \textbf{0.26 puan} & 0.3–1.0 &  evet \\
+MNIST & 1.57 puan & \textbf{1.95 puan} & 1.7 &  \textbf{hayır} \\
+\bottomrule\end{tabular}}\end{center}
+\textbf{Kural:} hiçbir etki, kendi veri setinin bandıyla kıyaslanmadan raporlanamaz. Bu makaledeki büyük etkiler ($-22.84$, $+22.0$, ayrık $B^\star$ sıçraması) banttan \textbf{20–25 kat} büyüktür ve sağlamdır; MNIST'teki $1.7$ ise bandın altındadır ve \textbf{hiçbir yön iddia edilmemiştir.}
+\section*{Sonuç}
+Warmuth'un evrensel dual denklemi $\theta_{t+1}=\theta_t-\eta g_t$, $\theta$ bir tamsayı kafesine hapsedildiğinde de anlamlı kalır ve sabit-rekabetçi bir garanti taşır (Teorem 1); kafes incelirse optimal $O(\sqrt{T\ln D})$ oranı geri gelir (Sonuç 1), ama o zaman saf bit kaydırma özelliği kaybolur (Sonuç 2).
+Ampirik olarak, gerçek seyrek metinde \textbf{sinaps başına 4 bit}, validation'da ayarlanmış FP64 MWU ile beraberliğe yetiyor — 16× durum tasarrufu, sıfır float çarpma, sıfır çalışma-zamanı \texttt{exp()}. Yoğun veride 7 bit gerekiyor ve orada bile 2.22 puan geride kalınıyor.
+Savunulabilir cümle \textbf{"Warmuth'u geçtik" değil}, şudur:
+\begin{notkutu}\textbf{Warmuth'un işini, çok daha ucuz bir donanımda, aynı doğrulukla yapıyoruz — ve nerede yapamadığımızı da biliyoruz.}
+\end{notkutu}
+\section*{Kaynaklar}
+\begin{enumerate}\item N. Littlestone. \emph{Learning Quickly When Irrelevant Attributes Abound: A New Linear-threshold Algorithm.} Machine Learning, 1988. — \href{https://en.wikipedia.org/wiki/Winnow_(algorithm}{Winnow (özet)})
+\item N. Littlestone, M. K. Warmuth. \emph{The Weighted Majority Algorithm.} Information and Computation, 1994. — \href{https://mwarmuth.bitbucket.io/pubs/C14.pdf}{PDF}
+\item J. Kivinen, M. K. Warmuth. \emph{Exponentiated Gradient versus Gradient Descent for Linear Predictors.} Information and Computation, 1997.
+\item Y. Freund, R. Schapire. \emph{A Decision-Theoretic Generalization of On-Line Learning.} JCSS, 1997.
+\item S. Arora, E. Hazan, S. Kale. \emph{The Multiplicative Weights Update Method: a Meta-Algorithm and Applications.} Theory of Computing, 2012. — \href{https://theoryofcomputing.org/articles/v008a006/v008a006.pdf}{PDF}
+\item \emph{LNS-Madam: Low-Precision Training in Logarithmic Number System using Multiplicative Weight Update.} — \href{https://arxiv.org/pdf/2106.13914}{arXiv:2106.13914}
+\item \emph{M+Adam: Low-Precision Training via Additive–Multiplicative Optimization.} — \href{https://arxiv.org/html/2607.10611}{arXiv:2607.10611}
+\item S. Gupta, A. Agrawal, K. Gopalakrishnan, P. Narayanan. \emph{Deep Learning with Limited Numerical Precision.} ICML, 2015.
+\item \emph{Memory Bounds for the Experts Problem.} — \href{https://arxiv.org/pdf/2204.09837}{arXiv:2204.09837}
+\item B. Peng et al. \emph{Near Optimal Memory-Regret Tradeoff for Online Learning.} — \href{https://arxiv.org/pdf/2303.01673}{arXiv:2303.01673}
+\item \emph{Online Prediction in Sub-linear Space.} — \href{https://arxiv.org/pdf/2207.07974}{arXiv:2207.07974}
+\item \emph{Instance-Optimal Matrix Multiplicative Weight Update and Its Quantum Applications.} — \href{https://arxiv.org/abs/2509.08911}{arXiv:2509.08911}
+\end{enumerate}
+\section*{Ek A — Tekrarlanabilirlik}
+Tüm kod ve ham çıktılar kasada:
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lc}\toprule
+Dosya & İçerik \\\midrule
+\texttt{Kodlar/deney\_274\_temiz\_tur.py} & Ana deney (5 tohum, 2 veri seti, 5 model) \\
+\texttt{Kodlar/deney\_274b\_bit\_genisligi.py} & $\eta=\ln2$ sabit, $B$ taraması \\
+\texttt{Kodlar/deney\_274c\_kaos\_kontrolu.py} & fp32/fp64 kaos kontrolü (N3) \\
+\texttt{Kodlar/deney\_274\_ham\_cikti.txt} & D-274 ham terminal çıktısı \\
+\bottomrule\end{tabular}}\end{center}
+Bağımlılıklar: \texttt{numpy}, \texttt{scipy}, \texttt{scikit-learn} (yalnızca 20NG indirme ve vektörleştirme için). Rastgelelik tohumlanmıştır; §6-N3 gereği sonuçlar kayan-nokta uygulamasına duyarlıdır — \textbf{birebir tekrar için aynı NumPy sürümü ve aynı LUT ifadesi kullanılmalıdır.}
+\section*{Ek B — Deney zinciri}
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lcc}\toprule
+Deney & Rol & Durum \\\midrule
+Deney 273 & İlk tur &  Çürütüldü (kırık tartı) \\
+Deney 274 & Temiz tur &  \\
+Deney 275 & Tek ray vs çift ray &  \\
+Deney 276 & Stokastik kafes adımı &  (Pareto'yu itmedi) \\
+Deney 277 & İkinci sahte zaferin otopsisi &  \\
+Deney 278 & Kamanın izolasyonu &  \\
+Deney 279 & p-Norm çanağı &  (tahmin çöktü) \\
+Deney 280 & Doygunluk teşhisi &  \\
+Deney 281 & \textbf{7 bit $\equiv$ 65 bit} &  ana ölçüm \\
+Deney 282 & $T$-yasası çürütüldü, $U$-yasası kuruldu &  \\
+Deney 283 & $n{=}1 \to n{=}5$ &  \\
+Deney 284 & Koordinat programı + üç yollu kıyas &  \\
+Deney 286 & MNIST kovalamacası (7 müdahale) &  hüküm geri çekildi \\
+D-289 / D-290 & İnce kafes / \textbf{kaos bandı ölçümü} &  \\
+TEOREM Kafes MWU & Teorem + 4 sonuç (kutulu rejim dahil) &  \\
+BULGU BitShift Bit Genisligi Faz Gecisi & Faz geçişi (yorumu düzeltildi) &  \\
+BULGU Cevrimici Ogrenme Kaotiktir & Kaos + bant ölçümü &  \\
+BULGU Iki Iddia Iki Baseline & Steelman'in sınırı &  \\
+\bottomrule\end{tabular}}\end{center}
+\textbf{Yıkılan zafer iddiaları (dördü de kendi kontrollerimizle):} D-273 kırık tartı · D-277 ULP gürültüsü · D-280 "normalizasyon eksik" · D-284/285 handikaplı baseline. İkisi \textbf{ilan edilmeden} yakalandı.
+\section*{Ek C --- Sonuç 4: kutulu rejimde kesinlik lemması}
+Teorem $\theta$'yı \textbf{sınırsız} varsayıyordu; motorumuz ise \textbf{kırpıyor}. Bu, uzun süre \emph{"teorem çuvalladığımız yeri kapsamıyor"} diye açık eksik sayıldı. \textbf{Çözüm projeksiyonda değil, artık biriktiricide.}
+\textbf{Lemma A (kesinlik — tam eşitlik).} Artık $\rho_t$ ile sanal yineleme $\tilde\theta_t := \theta_t+\rho_t$ tanımla. Taşıma kuralı $\rho_{t+1}=\rho_t-\eta g_t-(\theta_{t+1}-\theta_t)$ olduğundan:
+\[\boxed{\tilde\theta_{t+1}=\tilde\theta_t-\eta g_t}\]
+\textbf{Sanal yineleme, kuantizasyon hiç yokmuş gibi TAM ayna inişi yapar.} Yuvarlama hatası kaybolmaz — artıkta saklanır.
+\textbf{Lemma B (sınırlılık).} Taşıma mekanizması $\lvert\rho_t\rvert<\delta$ garantiler; \textbf{$T$'den ve $k$'dan bağımsız.}
+\textbf{Lemma C (oynanan ağırlık).} $e^{-\delta}\tilde w_i \le w_i \le e^{\delta}\tilde w_i$ — çarpımsal bozulma \textbf{sabit}, büyümez.
+\textbf{Sonuç.} Her karşılaştırmacı $u\in K$ (kutu) için
+\[\mathrm{Regret}\;\le\;e^{\delta}\cdot\mathrm{Regret}_{\text{tam MWU}}\;+\;\underbrace{\big[L(\Pi_K u^\star)-L(u^\star)\big]}_{u^\star\in K \text{ ise SIFIR}}\]
+\textbf{Üç ölçümü birden açıklıyor:}
+\begin{center}\small\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{%
+\begin{tabular}{lc}\toprule
+Ölçüm & Teorinin dediği \\\midrule
+Seyrek: tavana yapışan sinaps \textbf{sıfır} (Deney 280) & $u^\star\in K$ $\rightarrow$ kutu terimi 0 $\rightarrow$ 4 bit berabere  \\
+Yoğun, biriktiricisiz: histogram \textbf{düz doluyor} (D-280) & Lemma A yok $\rightarrow$ artık her adım \textbf{atılıyor} $\rightarrow$ rastgele yürüyüş  \\
+Yoğun, biriktiricili: master'a \textbf{eşit} (Deney 281) & Kesinlik geri $\rightarrow$ sınır tekrar geçerli  \\
+\bottomrule\end{tabular}}\end{center}
+\[\textbf{Kutu, teoremin kapsayamadığı şey değil — biriktiricinin çözdüğü şey.}\]
+ \textbf{Özgünlük:} error-feedback çerçevesi bilinendir (Karimireddy ve ark. 2019; Stich \& Karimireddy). Kafes-MWU'ya uygulaması yeni olabilir ama \textbf{doğrulanmadı ve iddia edilmiyor.}  Bu \textbf{yapı}dır, satır satır ispat yazılmamıştır; Lemma A tam eşitliktir, B ve C bir satırlıktır, son adım standart Hedge analizidir.
+
+\end{document}

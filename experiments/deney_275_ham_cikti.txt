@@ -1,0 +1,44 @@
+
+====================================================================================
+### SENTETIK DENGELI (yogun: ~1000 aktif/ornek)
+### FAZ A -- eta=ln2 SABIT (saf bit-shift), bellek butcesine gore
+====================================================================================
+model                         bit      acc%      std   Warmuth'a fark
+TEK RAY  isaret+2 us            3     51.32     1.11   -24.48 puan  t=-25.63
+CIFT RAY 2+2                    4     50.45     0.78   -25.35 puan  t=-27.43
+TEK RAY  isaret+3 us            4     52.33     1.01   -23.47 puan  t=-33.16
+TEK RAY  isaret+4 us            5     53.50     0.35   -22.30 puan  t=-47.64
+CIFT RAY 3+3                    6     51.22     1.03   -24.58 puan  t=-27.99
+TEK RAY  isaret+5 us            6     57.15     1.17   -18.65 puan  t=-25.45
+TEK RAY  isaret+6 us            7     73.58     1.94    -2.22 puan  t= -3.27
+CIFT RAY 4+4                    8     52.17     0.32   -23.63 puan  t=-49.27
+CIFT RAY 6+6                   12     74.72     1.86    -1.08 puan  t= -1.24  <-- BERABERE
+Warmuth MWU (eta* ayarli, FP64)   fp64     75.80     1.21   referans
+
+------------------------------------------------------------------------------------
+### FAZ B -- SENTETIK DENGELI : dar tek ray, eta validation'da ayarlaniyor
+------------------------------------------------------------------------------------
+TEK RAY isaret+2 us (3 bit, eta ayarli): 51.14% +/-0.88   secilen eta: ['0.1', '2', '0.25', '0.05', '2']
+TEK RAY isaret+3 us (4 bit, eta ayarli): 52.11% +/-1.04   secilen eta: ['1', '0.693', '0.693', '1', '0.5']
+
+====================================================================================
+### GERCEK VERI -- 20 Newsgroups (seyrek: ~44 aktif/dok)
+### FAZ A -- eta=ln2 SABIT (saf bit-shift), bellek butcesine gore
+====================================================================================
+model                         bit      acc%      std   Warmuth'a fark
+TEK RAY  isaret+2 us            3     89.99     0.51    -0.32 puan  t= -0.92  <-- BERABERE
+CIFT RAY 2+2                    4     89.13     0.73    -1.18 puan  t= -4.40
+TEK RAY  isaret+3 us            4     90.44     0.46    +0.12 puan  t=  0.61  <-- BERABERE
+TEK RAY  isaret+4 us            5     90.44     0.46    +0.12 puan  t=  0.61  <-- BERABERE
+CIFT RAY 3+3                    6     89.89     0.54    -0.42 puan  t= -1.23  <-- BERABERE
+TEK RAY  isaret+5 us            6     90.44     0.46    +0.12 puan  t=  0.61  <-- BERABERE
+TEK RAY  isaret+6 us            7     90.44     0.46    +0.12 puan  t=  0.61  <-- BERABERE
+CIFT RAY 4+4                    8     90.00     0.23    -0.31 puan  t= -1.03  <-- BERABERE
+CIFT RAY 6+6                   12     90.00     0.23    -0.31 puan  t= -1.03  <-- BERABERE
+Warmuth MWU (eta* ayarli, FP64)   fp64     90.31     0.46   referans
+
+------------------------------------------------------------------------------------
+### FAZ B -- GERCEK VERI : dar tek ray, eta validation'da ayarlaniyor
+------------------------------------------------------------------------------------
+TEK RAY isaret+2 us (3 bit, eta ayarli): 89.47% +/-1.03   secilen eta: ['0.05', '1', '1', '0.05', '0.693']
+TEK RAY isaret+3 us (4 bit, eta ayarli): 90.35% +/-0.55   secilen eta: ['0.5', '0.5', '0.05', '0.5', '1']
